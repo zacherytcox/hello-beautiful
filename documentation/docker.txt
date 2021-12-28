@@ -1,8 +1,0 @@
-Docker:
-https://www.jenkins.io/doc/book/installing/docker/
-docker pull jenkins/jenkins
-
-
-
-MacOS:
-https://www.jenkins.io/doc/book/installing/macos/
