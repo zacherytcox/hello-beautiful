@@ -94,15 +94,15 @@ print_style "Container ID:$this_container_id" "info"
 
 
 
-print_style "Waiting for Setup Code..." "warning"
-while true; do
-    docker exec jenkins-blueocean cat /var/jenkins_home/secrets/initialAdminPassword;tmp=$?
-    if [[ "$tmp" == '0' ]]
-        then
-            break;
-    fi
-    sleep 5
-done
+# print_style "Waiting for Setup Code..." "warning"
+# while true; do
+#     docker exec jenkins-blueocean cat /var/jenkins_home/secrets/initialAdminPassword;tmp=$?
+#     if [[ "$tmp" == '0' ]]
+#         then
+#             break;
+#     fi
+#     sleep 5
+# done
 
 print_style "Secret Setup Code:$(docker exec jenkins-blueocean cat /var/jenkins_home/secrets/initialAdminPassword)" "info"
 
