@@ -22,8 +22,6 @@ Resources:
       Tags: 
         - Key: GitCommit
           Value: !Ref GitCommit
-        - Key: GitComment
-          Value: !Ref GitComment
         - Key: GitBranch
           Value: !Ref GitBranch
         - Key: LaunchTime
@@ -140,11 +138,6 @@ Resources:
                 - ls -alh
                 - pwd
                 - whoami
-                - aws cloudformation describe-stacks --stack ${TempStackName}
-                - aws cloudformation describe-stacks --stack ${TempStackName} | jq -r '.Stacks | .[] | .Outputs
-                - aws cloudformation describe-stacks --stack ${TempStackName} | jq -r '.Stacks | .[] | .Outputs | .[] | select(.OutputKey=="${TempStackName}-Bucket"
-                - app_bucket=$(aws cloudformation describe-stacks --stack ${TempStackName} | jq -r '.Stacks | .[] | .Outputs | select(.OutputKey=="${TempStackName}-Bucket") | .OutputValue ')
-                - aws s3 sync s3://$app_bucket ./code
               finally:
                 - echo This always runs even if the install command fails
         SourceIdentifier: pleaseworkforZach
@@ -171,6 +164,11 @@ Resources:
                 - whoami
                 - aws cloudformation describe-stacks --stack '${AWS::StackName}' | jq -r '.Stacks | .[].StackStatus'
                 - if [ "$(aws cloudformation describe-stacks --stack '${AWS::StackName}' | jq -r '.Stacks | .[].StackStatus')" == 'UPDATE_COMPLETE' ] || [ "$(aws cloudformation describe-stacks --stack '${AWS::StackName}' | jq -r '.Stacks | .[].StackStatus')" == 'CREATE_COMPLETE' ] ;then echo Stack Completed Successfully; else exit 1; fi 
+                - aws cloudformation describe-stacks --stack ${TempStackName}
+                - aws cloudformation describe-stacks --stack ${TempStackName} | jq -r '.Stacks | .[] | .Outputs
+                - aws cloudformation describe-stacks --stack ${TempStackName} | jq -r '.Stacks | .[] | .Outputs | .[] | select(.OutputKey=="${TempStackName}-Bucket"
+                - app_bucket=$(aws cloudformation describe-stacks --stack ${TempStackName} | jq -r '.Stacks | .[] | .Outputs | select(.OutputKey=="${TempStackName}-Bucket") | .OutputValue ')
+                - aws s3 sync s3://$app_bucket ./code
               finally:
                 - echo This always runs even if the install command fails
         SourceIdentifier: pleaseworkforZach

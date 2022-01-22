@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Parameters:
   AppStackName:
     Type: String
-    Default: Defaulted-ZachTest-App
+    Default: defaulted-zachtest-app
   RepoID:
     Type: String
     Default: "zacherytcox/hello-beautiful"
