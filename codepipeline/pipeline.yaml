@@ -48,18 +48,18 @@ Resources:
                 BranchName: !Ref GitBranch
               OutputArtifacts: 
                 - Name: SourceOutput
-        - Name: Build
-          Actions: 
-            - Name: Build
-              ActionTypeId: 
-                Category: Build
-                Owner: AWS
-                Provider: CodeBuild
-                Version: 1
-              InputArtifacts: 
-                - Name: SourceOutput
-              Configuration:
-                ProjectName: !Ref CodeBuild
+        # - Name: Build
+        #   Actions: 
+        #     - Name: Build
+        #       ActionTypeId: 
+        #         Category: Build
+        #         Owner: AWS
+        #         Provider: CodeBuild
+        #         Version: 1
+        #       InputArtifacts: 
+        #         - Name: SourceOutput
+        #       Configuration:
+        #         ProjectName: !Ref CodeBuild
         - Name: Deploy
           Actions: 
             - Name: Deploy
@@ -75,7 +75,7 @@ Resources:
                 TemplatePath: SourceOutput::app/app.yaml
               InputArtifacts: 
                 - Name: SourceOutput
-        - Name: Test
+        - Name: Data-Test
           Actions: 
             - Name: Test
               ActionTypeId: 
@@ -118,30 +118,30 @@ Resources:
               Resource:
               - '*'
           PolicyName: Policy
-  CodeBuild:
-    Type: AWS::CodeBuild::Project
-    Properties: 
-      Artifacts: 
-        Type: CODEPIPELINE
-      Environment: 
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
-        Type: LINUX_CONTAINER
-      ServiceRole: !GetAtt IAMRole.Arn
-      Source: 
-        BuildSpec: !Sub |
-          version: 0.2
-          phases:
-            build:
-              commands:
-                - echo Build started on `date`
-                - ls -alh
-                - pwd
-                - whoami
-              finally:
-                - echo This always runs even if the install command fails
-        SourceIdentifier: pleaseworkforZach
-        Type: CODEPIPELINE
+  # CodeBuild:
+  #   Type: AWS::CodeBuild::Project
+  #   Properties: 
+  #     Artifacts: 
+  #       Type: CODEPIPELINE
+  #     Environment: 
+  #       ComputeType: BUILD_GENERAL1_SMALL
+  #       Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+  #       Type: LINUX_CONTAINER
+  #     ServiceRole: !GetAtt IAMRole.Arn
+  #     Source: 
+  #       BuildSpec: !Sub |
+  #         version: 0.2
+  #         phases:
+  #           build:
+  #             commands:
+  #               - echo Build started on `date`
+  #               - ls -alh
+  #               - pwd
+  #               - whoami
+  #             finally:
+  #               - echo This always runs even if the install command fails
+  #       SourceIdentifier: pleaseworkforZach
+  #       Type: CODEPIPELINE
   CodeBuild2:
     Type: AWS::CodeBuild::Project
     Properties: 
@@ -156,20 +156,18 @@ Resources:
         BuildSpec: !Sub |
           version: 0.2
           phases:
-            build:
+            install:
               commands:
-                - echo Build started on `date`
-                - ls -alh
-                - pwd
-                - whoami
-                - aws cloudformation describe-stacks --stack '${AWS::StackName}' | jq -r '.Stacks | .[].StackStatus'
-                - if [ "$(aws cloudformation describe-stacks --stack '${AWS::StackName}' | jq -r '.Stacks | .[].StackStatus')" == 'UPDATE_COMPLETE' ] || [ "$(aws cloudformation describe-stacks --stack '${AWS::StackName}' | jq -r '.Stacks | .[].StackStatus')" == 'CREATE_COMPLETE' ] ;then echo Stack Completed Successfully; else exit 1; fi 
-                - aws cloudformation describe-stacks --stack ${TempStackName}
-                - aws cloudformation describe-stacks --stack ${TempStackName} | jq -r '.Stacks | .[] | .Outputs
-                - aws cloudformation describe-stacks --stack ${TempStackName} | jq -r '.Stacks | .[] | .Outputs | .[] | select(.OutputKey=="${TempStackName}-Bucket"
-                - app_bucket=$(aws cloudformation describe-stacks --stack ${TempStackName} | jq -r '.Stacks | .[] | .Outputs | select(.OutputKey=="${TempStackName}-Bucket") | .OutputValue ')
+                - echo Install started on `date`
+                - aws cloudformation describe-stacks --stack ${TempStackName} | jq -r '.Stacks | .[].StackStatus'
+                - app_bucket=$(aws cloudformation describe-stacks --stack {TempStackName} | jq -r '.Stacks | .[] | .Outputs | .[] | select(.ExportName=="{TempStackName}-Bucket") | .OutputValue')
                 - aws s3 sync s3://$app_bucket ./code
-              finally:
-                - echo This always runs even if the install command fails
+            post_build:
+              commands:
+                - echo Testing started on `date`
+                - aws cloudformation describe-stacks --stack '${TempStackName}' | jq -r '.Stacks | .[].StackStatus'
+                - if [ "$(aws cloudformation describe-stacks --stack '${TempStackName}' | jq -r '.Stacks | .[].StackStatus')" == 'UPDATE_COMPLETE' ] || [ "$(aws cloudformation describe-stacks --stack '${TempStackName}' | jq -r '.Stacks | .[].StackStatus')" == 'CREATE_COMPLETE' ] ;then echo Stack Completed Successfully; else exit 1; fi 
+                - app_bucket=$(aws cloudformation describe-stacks --stack {TempStackName} | jq -r '.Stacks | .[] | .Outputs | .[] | select(.ExportName=="{TempStackName}-Bucket") | .OutputValue')
+                - page=$(curl $app_bucket.s3-website-us-east-1.amazonaws.com);if [ "$page" == '' ] ;then echo "Homepage is working"; else echo "Homepage errors";exit 1; fi 
         SourceIdentifier: pleaseworkforZach
         Type: CODEPIPELINE
