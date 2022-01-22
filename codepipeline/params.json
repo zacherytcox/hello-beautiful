@@ -1,0 +1,10 @@
+[
+    {
+        "ParameterKey": "AppStackName",
+        "ParameterValue": "zachtest"
+    },
+    {
+        "ParameterKey": "RepoID",
+        "ParameterValue": "zacherytcox/hello-beautiful"
+    }
+]

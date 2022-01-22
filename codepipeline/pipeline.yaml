@@ -1,0 +1,177 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  AppStackName:
+    Type: String
+  RepoID:
+    Type: String
+  GitCommit:
+    Type: String
+  GitComment:
+    Type: String
+  GitBranch:
+    Type: String
+  LaunchTime:
+    Type: String
+  TempStackName:
+    Type: String
+    Default: Hello-Wonderful-app
+Resources:
+  Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      Tags: 
+        - Key: GitCommit
+          Value: !Ref GitCommit
+        - Key: GitComment
+          Value: !Ref GitComment
+        - Key: GitBranch
+          Value: !Ref GitBranch
+        - Key: LaunchTime
+          Value: !Ref LaunchTime
+  CodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties: 
+      ArtifactStore: 
+        Location: !Ref Bucket
+        Type: S3
+      RoleArn: !GetAtt IAMRole.Arn
+      Stages: 
+        - Name: Source
+          Actions: 
+            - Name: Source
+              ActionTypeId: 
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: 1
+              Configuration:
+                ConnectionArn: !Ref CodeStarConnection
+                FullRepositoryId: !Ref RepoID
+                BranchName: !Ref GitBranch
+              OutputArtifacts: 
+                - Name: SourceOutput
+        - Name: Build
+          Actions: 
+            - Name: Build
+              ActionTypeId: 
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              InputArtifacts: 
+                - Name: SourceOutput
+              Configuration:
+                ProjectName: !Ref CodeBuild
+        - Name: Deploy
+          Actions: 
+            - Name: Deploy
+              ActionTypeId: 
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: 1
+              Configuration: 
+                ActionMode: "CREATE_UPDATE"
+                StackName: !Ref AppStackName
+                RoleArn: !GetAtt IAMRole.Arn
+                TemplatePath: SourceOutput::app/app.yaml
+              InputArtifacts: 
+                - Name: SourceOutput
+        # - Name: Test
+        #   Actions: 
+        #     - Name: Test
+        #       ActionTypeId: 
+        #         Category: Test
+        #         Owner: AWS
+        #         Provider: CodeBuild
+        #         Version: 1
+        #       InputArtifacts: 
+        #         - Name: SourceOutput
+        #       Configuration:
+        #         ProjectName: !Ref CodeBuild2
+  CodeStarConnection:
+    Type: AWS::CodeStarConnections::Connection
+    Properties: 
+      ConnectionName: !Ref AppStackName
+      ProviderType: GitHub
+  IAMRole:
+    Type: AWS::IAM::Role
+    Properties: 
+      AssumeRolePolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
+        - Sid: ''
+          Effect: Allow
+          Principal:
+            Service: 
+              - codepipeline.amazonaws.com
+              - codebuild.amazonaws.com
+              - cloudformation.amazonaws.com
+          Action: sts:AssumeRole
+      Description: String
+      Policies: 
+        - PolicyDocument: 
+            Version: '2012-10-17'
+            Statement:
+            - Sid: AWSCloudTrailCreateLogStream20141101
+              Effect: Allow
+              Action:
+              - '*'
+              Resource:
+              - '*'
+          PolicyName: Policy
+  CodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties: 
+      Artifacts: 
+        Type: CODEPIPELINE
+      Environment: 
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+        Type: LINUX_CONTAINER
+      ServiceRole: !GetAtt IAMRole.Arn
+      Source: 
+        BuildSpec: !Sub |
+          version: 0.2
+          phases:
+            build:
+              commands:
+                - echo Build started on `date`
+                - ls -alh
+                - pwd
+                - whoami
+                - aws cloudformation describe-stacks --stack ${TempStackName}
+                - aws cloudformation describe-stacks --stack ${TempStackName} | jq -r '.Stacks | .[] | .Outputs
+                - aws cloudformation describe-stacks --stack ${TempStackName} | jq -r '.Stacks | .[] | .Outputs | .[] | select(.OutputKey=="${TempStackName}-Bucket"
+                - app_bucket=$(aws cloudformation describe-stacks --stack ${TempStackName} | jq -r '.Stacks | .[] | .Outputs | select(.OutputKey=="${TempStackName}-Bucket") | .OutputValue ')
+                - aws s3 sync s3://$app_bucket ./code
+              finally:
+                - echo This always runs even if the install command fails
+        SourceIdentifier: pleaseworkforZach
+        Type: CODEPIPELINE
+  CodeBuild2:
+    Type: AWS::CodeBuild::Project
+    Properties: 
+      Artifacts: 
+        Type: CODEPIPELINE
+      Environment: 
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+        Type: LINUX_CONTAINER
+      ServiceRole: !GetAtt IAMRole.Arn
+      Source: 
+        BuildSpec: !Sub |
+          version: 0.2
+          phases:
+            build:
+              commands:
+                - echo Build started on `date`
+                - ls -alh
+                - pwd
+                - whoami
+                - aws cloudformation describe-stacks --stack '${AWS::StackName}' | jq -r '.Stacks | .[].StackStatus'
+                - if [ "$(aws cloudformation describe-stacks --stack '${AWS::StackName}' | jq -r '.Stacks | .[].StackStatus')" == 'UPDATE_COMPLETE' ] || [ "$(aws cloudformation describe-stacks --stack '${AWS::StackName}' | jq -r '.Stacks | .[].StackStatus')" == 'CREATE_COMPLETE' ] ;then echo Stack Completed Successfully; else exit 1; fi 
+              finally:
+                - echo This always runs even if the install command fails
+        SourceIdentifier: pleaseworkforZach
+        Type: CODEPIPELINE
