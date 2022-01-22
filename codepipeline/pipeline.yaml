@@ -75,18 +75,18 @@ Resources:
                 TemplatePath: SourceOutput::app/app.yaml
               InputArtifacts: 
                 - Name: SourceOutput
-        # - Name: Test
-        #   Actions: 
-        #     - Name: Test
-        #       ActionTypeId: 
-        #         Category: Test
-        #         Owner: AWS
-        #         Provider: CodeBuild
-        #         Version: 1
-        #       InputArtifacts: 
-        #         - Name: SourceOutput
-        #       Configuration:
-        #         ProjectName: !Ref CodeBuild2
+        - Name: Test
+          Actions: 
+            - Name: Test
+              ActionTypeId: 
+                Category: Test
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              InputArtifacts: 
+                - Name: SourceOutput
+              Configuration:
+                ProjectName: !Ref CodeBuild2
   CodeStarConnection:
     Type: AWS::CodeStarConnections::Connection
     Properties: 
