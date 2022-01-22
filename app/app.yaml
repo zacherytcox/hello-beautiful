@@ -22,7 +22,7 @@ Resources:
   Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub '${AppStackName}-${AWS::AccountId}-${GitCommit}'
+      BucketName: !Sub '${AppStackName}-${AWS::AccountId}'
       WebsiteConfiguration:
         ErrorDocument: error.html
         IndexDocument: index.html
