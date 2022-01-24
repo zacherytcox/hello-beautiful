@@ -6,11 +6,7 @@ Parameters:
     Type: String
   GitCommit:
     Type: String
-  GitComment:
-    Type: String
   GitBranch:
-    Type: String
-  LaunchTime:
     Type: String
   TempStackName:
     Type: String
@@ -24,8 +20,6 @@ Resources:
           Value: !Ref GitCommit
         - Key: GitBranch
           Value: !Ref GitBranch
-        - Key: LaunchTime
-          Value: !Ref LaunchTime
   CodePipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties: 
@@ -33,6 +27,7 @@ Resources:
         Location: !Ref Bucket
         Type: S3
       RoleArn: !GetAtt IAMRole.Arn
+      RestartExecutionOnUpdate: True
       Stages: 
         - Name: Source
           Actions: 
@@ -70,8 +65,9 @@ Resources:
                 Version: 1
               Configuration: 
                 ActionMode: "CREATE_UPDATE"
-                StackName: !Ref AppStackName
+                StackName: !Sub ${AWS::StackName}-App
                 RoleArn: !GetAtt IAMRole.Arn
+                ParameterOverrides: !Sub '{"BucketName": "${TempStackName}","GitCommit": "${GitCommit}","GitBranch": "${GitBranch}"}'
                 TemplatePath: SourceOutput::app/app.yaml
               InputArtifacts: 
                 - Name: SourceOutput
@@ -155,19 +151,21 @@ Resources:
       Source: 
         BuildSpec: !Sub |
           version: 0.2
+          env:
+            variables:
+              stack_name: "${AWS::StackName}-App"
           phases:
             install:
               commands:
+                - ( set -o posix ; set )
                 - echo Install started on `date`
-                - aws cloudformation describe-stacks --stack ${TempStackName} | jq -r '.Stacks | .[].StackStatus'
-                - app_bucket=$(aws cloudformation describe-stacks --stack {TempStackName} | jq -r '.Stacks | .[] | .Outputs | .[] | select(.ExportName=="{TempStackName}-Bucket") | .OutputValue')
-                - aws s3 sync s3://$app_bucket ./code
+                - aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus'
+                - this_bucket=$(aws cloudformation describe-stacks --stack $stack_name --query 'Stacks[0].Outputs[?OutputKey==`BucketOutput`].OutputValue' | jq -r '.[]');aws s3 sync ./code s3://$this_bucket --exclude "*.DS_Store"
             post_build:
               commands:
                 - echo Testing started on `date`
-                - aws cloudformation describe-stacks --stack '${TempStackName}' | jq -r '.Stacks | .[].StackStatus'
-                - if [ "$(aws cloudformation describe-stacks --stack '${TempStackName}' | jq -r '.Stacks | .[].StackStatus')" == 'UPDATE_COMPLETE' ] || [ "$(aws cloudformation describe-stacks --stack '${TempStackName}' | jq -r '.Stacks | .[].StackStatus')" == 'CREATE_COMPLETE' ] ;then echo Stack Completed Successfully; else exit 1; fi 
-                - app_bucket=$(aws cloudformation describe-stacks --stack {TempStackName} | jq -r '.Stacks | .[] | .Outputs | .[] | select(.ExportName=="{TempStackName}-Bucket") | .OutputValue')
-                - page=$(curl $app_bucket.s3-website-us-east-1.amazonaws.com);if [ "$page" == '' ] ;then echo "Homepage is working"; else echo "Homepage errors";exit 1; fi 
+                - aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus'
+                - if [ "$(aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus')" == 'UPDATE_COMPLETE' ] || [ "$(aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus')" == 'CREATE_COMPLETE' ] ;then echo Stack Completed Successfully; else exit 1; fi 
+                - code=$(curl --write-out '%{http_code}' --silent --output /dev/null "$(aws cloudformation describe-stacks --stack $stack_name --query 'Stacks[0].Outputs[?OutputKey==`BucketOutput`].OutputValue' | jq -r '.[]').s3-website-us-east-1.amazonaws.com"/);if [ "$code" == '200' ];then echo "Homepage is active ($code)";else echo "Homepage errors ("$code")";exit 1;fi 
         SourceIdentifier: pleaseworkforZach
         Type: CODEPIPELINE

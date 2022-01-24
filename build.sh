@@ -376,7 +376,7 @@ pipeline_loop () {
         cfn_init
 
         #Update parameters
-        this_params=$(cat ${YAMLPARAMSLOCATION:7} | jq -r ". += [{\"ParameterKey\": \"GitCommit\",\"ParameterValue\": \"$(get_current_git_commit)\"},{\"ParameterKey\": \"GitComment\",\"ParameterValue\": \"$(get_current_git_comment)\"},{\"ParameterKey\": \"GitBranch\",\"ParameterValue\": \"$(get_current_git_branch)\"},{\"ParameterKey\": \"LaunchTime\",\"ParameterValue\": \"$(get_current_date_time)\"}]")
+        this_params=$(cat ${YAMLPARAMSLOCATION:7} | jq -r ". += [{\"ParameterKey\": \"GitCommit\",\"ParameterValue\": \"$(get_current_git_commit)\"},{\"ParameterKey\": \"GitBranch\",\"ParameterValue\": \"$(get_current_git_branch)\"}]")
 
         cfn_create_stack $STACKNAME-pipeline $YAMLLOCATION "$this_params"
         tests_pipeline

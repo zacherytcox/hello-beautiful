@@ -1,40 +1,30 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Parameters:
-  AppStackName:
+  BucketName:
     Type: String
-    Default: defaulted-zachtest-app
+    Default: defaulted-hello-beautiful-app
   RepoID:
     Type: String
     Default: "zacherytcox/hello-beautiful"
   GitCommit:
     Type: String
     Default: Defaulted
-  GitComment:
-    Type: String
-    Default: Defaulted
   GitBranch:
-    Type: String
-    Default: Defaulted
-  LaunchTime:
     Type: String
     Default: Defaulted
 Resources:
   Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub '${AppStackName}-${AWS::AccountId}'
+      BucketName: !Sub '${BucketName}'
       WebsiteConfiguration:
         ErrorDocument: error.html
         IndexDocument: index.html
       Tags: 
         - Key: GitCommit
           Value: !Ref GitCommit
-        - Key: GitComment
-          Value: !Ref GitComment
         - Key: GitBranch
           Value: !Ref GitBranch
-        - Key: LaunchTime
-          Value: !Ref LaunchTime
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties: 
