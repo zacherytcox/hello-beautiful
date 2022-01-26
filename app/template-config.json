@@ -1,0 +1,12 @@
+{
+    "Parameters" : {
+        "GitCommit" : "#{SourceVariables.CommitId}",
+        "GitBranch" : "#{SourceVariables.BranchName}",
+        "RepoID" : "zacherytcox/hello-beautiful"
+    },
+    "Tags" : {
+        "GitCommit" : "#{SourceVariables.CommitId}",
+        "GitBranch" : "#{SourceVariables.BranchName}",
+        "RepoID" : "zacherytcox/hello-beautiful"
+    }
+  }

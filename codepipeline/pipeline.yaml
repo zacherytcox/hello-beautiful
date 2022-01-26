@@ -69,7 +69,7 @@ Resources:
                 RoleArn: !GetAtt IAMRole.Arn
                 # ParameterOverrides: !Sub '{"GitCommit": "#\{SourceVariables.CommitId\}","GitBranch": "#\{SourceVariables.BranchName\}"}'
                 TemplatePath: SourceOutput::app/app.yaml
-                TemplateConfiguration: SourceOutput::app/params.json
+                TemplateConfiguration: SourceOutput::app/template-config.json
               InputArtifacts: 
                 - Name: SourceOutput
         - Name: Data-Test
