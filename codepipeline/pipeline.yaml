@@ -10,7 +10,7 @@ Parameters:
     Type: String
   TempStackName:
     Type: String
-    Default: Hello-Wonderful-app
+    Default: hello-wonderful-app
 Resources:
   Bucket:
     Type: AWS::S3::Bucket
@@ -67,7 +67,7 @@ Resources:
                 ActionMode: "CREATE_UPDATE"
                 StackName: !Sub ${AWS::StackName}-App
                 RoleArn: !GetAtt IAMRole.Arn
-                ParameterOverrides: !Sub '{"BucketName": "${TempStackName}","GitCommit": "${GitCommit}","GitBranch": "${GitBranch}"}'
+                ParameterOverrides: !Sub '{"GitCommit": "${GitCommit}","GitBranch": "${GitBranch}"}'
                 TemplatePath: SourceOutput::app/app.yaml
               InputArtifacts: 
                 - Name: SourceOutput

@@ -1,8 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Parameters:
-  BucketName:
-    Type: String
-    Default: defaulted-hello-beautiful-app
   RepoID:
     Type: String
     Default: "zacherytcox/hello-beautiful"
@@ -16,7 +13,6 @@ Resources:
   Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub '${BucketName}'
       WebsiteConfiguration:
         ErrorDocument: error.html
         IndexDocument: index.html
@@ -43,6 +39,9 @@ Resources:
               - !Ref Bucket
               - /*
 Outputs:
+  BucketWebsite:
+    Description: S3 Hosting Bucket name
+    Value: !Sub http://${Bucket}.s3-website-us-east-1.amazonaws.com/
   BucketOutput:
     Description: S3 Hosting Bucket name
     Value: !Ref Bucket
