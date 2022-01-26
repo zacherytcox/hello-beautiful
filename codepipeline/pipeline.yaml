@@ -67,8 +67,9 @@ Resources:
                 ActionMode: "CREATE_UPDATE"
                 StackName: !Sub ${AWS::StackName}-App
                 RoleArn: !GetAtt IAMRole.Arn
-                ParameterOverrides: !Sub '{"GitCommit": "${GitCommit}","GitBranch": "${GitBranch}"}'
+                # ParameterOverrides: !Sub '{"GitCommit": "#\{SourceVariables.CommitId\}","GitBranch": "#\{SourceVariables.BranchName\}"}'
                 TemplatePath: SourceOutput::app/app.yaml
+                TemplateConfiguration: SourceOutput::app/params.json
               InputArtifacts: 
                 - Name: SourceOutput
         - Name: Data-Test

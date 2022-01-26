@@ -1,0 +1,14 @@
+[
+    {
+        "ParameterKey": "GitCommit",
+        "ParameterValue": "#{SourceVariables.CommitId}"
+    },
+    {
+        "ParameterKey": "GitBranch",
+        "ParameterValue": "#{SourceVariables.BranchName}"
+    },
+    {
+        "ParameterKey": "RepoID",
+        "ParameterValue": "zacherytcox/hello-beautiful"
+    }
+]
