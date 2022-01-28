@@ -1,7 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Parameters:
-  AppStackName:
-    Type: String
   RepoID:
     Type: String
   GitCommit:
@@ -17,6 +15,8 @@ Resources:
           Value: !Ref GitCommit
         - Key: GitBranch
           Value: !Ref GitBranch
+        - Key: RepoID
+          Value: !Ref RepoID
   CodePipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties: 
@@ -85,7 +85,7 @@ Resources:
   CodeStarConnection:
     Type: AWS::CodeStarConnections::Connection
     Properties: 
-      ConnectionName: !Ref AppStackName
+      ConnectionName: hello-beautiful
       ProviderType: GitHub
   IAMRole:
     Type: AWS::IAM::Role

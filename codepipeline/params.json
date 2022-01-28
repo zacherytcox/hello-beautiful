@@ -1,9 +1,5 @@
 [
     {
-        "ParameterKey": "AppStackName",
-        "ParameterValue": "hello-beautiful"
-    },
-    {
         "ParameterKey": "RepoID",
         "ParameterValue": "zacherytcox/hello-beautiful"
     }

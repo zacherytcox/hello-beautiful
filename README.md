@@ -3,10 +3,17 @@
 This project is to build a simple application and technologies surrounding developing, testing, and deploying an application.
 
 ## Future Enhancements (WIP)
+
+Template
+- [ ] Reduce IAM Role Policy permissions.
+- [ ] Clean up template object names.
+
+Pre-Commit Hooks
 - [ ] https://github.com/awslabs/git-secrets
 - [ ] https://github.com/koalaman/shellcheck
 - [ ] https://github.com/pre-commit/pre-commit-hooks#trailing-whitespace
-- [ ] Pre-Commit Hooks
+
+Pipeline
 - [ ] Pipeline Linters/Checks
 - [ ] SAST for Code
 
