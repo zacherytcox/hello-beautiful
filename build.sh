@@ -257,7 +257,6 @@ cfn_delete_stack () {
         then
             #Exit if the stack does not exist
             print_style  "Stack does not exist!" "danger"
-            exit 1
     fi
 
     aws cloudformation delete-stack --stack-name "$stack"
@@ -441,16 +440,18 @@ prepare_for_build
 #Function to delete all stacks
 if [[ "$1" == 'delete' ]]
     then
-        cfn_init_delete; cfn_delete_stack; exit 1
+        cfn_init_delete $STACKNAME-pipeline; cfn_init_delete $STACKNAME-pipeline-App; cfn_delete_stack $STACKNAME-pipeline-App; cfn_delete_stack $STACKNAME-pipeline; exit 1
 fi
 
-read -r -p "Enter 1 to deploy pipeline, 2 to deploy application stack, Enter to exit: " answer
-case $answer in
-    [1]* ) pipeline_loop ;;
-    [2]* ) app_loop ;;
-    "" ) exit 1;;
-    * ) print_style  "Please answer 1, 2, or Enter" "danger";;
-esac
+pipeline_loop
+
+# read -r -p "Enter 1 to deploy pipeline, 2 to deploy application stack, Enter to exit: " answer
+# case $answer in
+#     [1]* ) pipeline_loop ;;
+#     [2]* ) app_loop ;;
+#     "" ) exit 1;;
+#     * ) print_style  "Please answer 1, 2, or Enter" "danger";;
+# esac
 
 
 # #Main Loop
