@@ -21,6 +21,8 @@ Resources:
           Value: !Ref GitCommit
         - Key: GitBranch
           Value: !Ref GitBranch
+        - Key: RepoID
+          Value: !Ref RepoID
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties: 
@@ -47,3 +49,12 @@ Outputs:
     Value: !Ref Bucket
     Export:
       Name: !Sub '${AWS::StackName}-Bucket'
+  RepoID:
+    Description: Github RepoID
+    Value: !Ref RepoID
+  GitCommit:
+    Description: GitCommit
+    Value: !Ref GitCommit
+  GitBranch:
+    Description: GitBranch
+    Value: !Ref GitBranch

@@ -41,11 +41,12 @@ Resources:
                 ConnectionArn: !Ref CodeStarConnection
                 FullRepositoryId: !Ref RepoID
                 BranchName: !Ref GitBranch
+              Namespace: SourceVariables
               OutputArtifacts: 
                 - Name: SourceOutput
-        # - Name: Build
+        # - Name: Deploy
         #   Actions: 
-        #     - Name: Build
+        #     - Name: Deploy
         #       ActionTypeId: 
         #         Category: Build
         #         Owner: AWS
@@ -54,6 +55,7 @@ Resources:
         #       InputArtifacts: 
         #         - Name: SourceOutput
         #       Configuration:
+        #         EnvironmentVariables: "[{\"name\":\"Release_ID\",\"value\":\"#{codepipeline.PipelineExecutionId}\",\"type\":\"PLAINTEXT\"},{\"name\":\"Commit_ID\",\"value\":\"#{SourceVariables.CommitId}\",\"type\":\"PLAINTEXT\"}]"
         #         ProjectName: !Ref CodeBuild
         - Name: Deploy
           Actions: 
@@ -67,9 +69,8 @@ Resources:
                 ActionMode: "CREATE_UPDATE"
                 StackName: !Sub ${AWS::StackName}-App
                 RoleArn: !GetAtt IAMRole.Arn
-                # ParameterOverrides: !Sub '{"GitCommit": "#\{SourceVariables.CommitId\}","GitBranch": "#\{SourceVariables.BranchName\}"}'
+                ParameterOverrides: !Sub '{"GitCommit": "#{SourceVariables.CommitId}","GitBranch": "#{SourceVariables.BranchName}","RepoID": "#{SourceVariables.RepositoryName}"}'
                 TemplatePath: SourceOutput::app/app.yaml
-                TemplateConfiguration: SourceOutput::app/template-config.json
               InputArtifacts: 
                 - Name: SourceOutput
         - Name: Data-Test
@@ -132,6 +133,8 @@ Resources:
   #           build:
   #             commands:
   #               - echo Build started on `date`
+  #               - echo $Commit_ID
+  #               - ( set -o posix ; set ) | less
   #               - ls -alh
   #               - pwd
   #               - whoami
