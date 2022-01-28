@@ -2,6 +2,16 @@
 
 This project is to build a simple application and technologies surrounding developing, testing, and deploying an application.
 
+## Future Enhancements (WIP)
+- [ ] https://github.com/awslabs/git-secrets
+- [ ] https://github.com/koalaman/shellcheck
+- [ ] https://github.com/pre-commit/pre-commit-hooks#trailing-whitespace
+- [ ] Pre-Commit Hooks
+- [ ] Pipeline Linters/Checks
+- [ ] SAST for Code
+
+
+
 ## Installation
 
 <!-- Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar. -->
