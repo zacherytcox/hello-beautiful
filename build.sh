@@ -382,7 +382,7 @@ pipeline_loop () {
         tests_pipeline
         read -r -p "Enter 1 to delete the stack, 2 to update stack + test again, Enter to exit: " answer
         case $answer in
-            [1]* ) cfn_init_delete $STACKNAME-pipeline; cfn_delete_stack $STACKNAME-pipeline; exit 1;;
+            [1]* ) cfn_init_delete $STACKNAME-pipeline; cfn_init_delete $STACKNAME-pipeline-App; cfn_delete_stack $STACKNAME-pipeline-App; cfn_delete_stack $STACKNAME-pipeline; exit 1;;
             [2]* ) : ;;
             "" ) exit 1;;
             * ) print_style  "Please answer 1, 2, or Enter" "danger";;
