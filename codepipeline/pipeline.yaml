@@ -266,9 +266,8 @@ Resources:
             post_build:
               commands:
                 - echo Testing started on `date`
-                - aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus'
-                - aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus'
-                - if [ "$(aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus')" == 'UPDATE_COMPLETE' ] || [ "$(aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus')" == 'CREATE_COMPLETE' ] ;then echo Stack Completed Successfully; else exit 1; fi 
+                - cat /codepipeline/tests/cfn-successful.sh
+                - sh /codepipeline/tests/cfn-successful.sh $stack_name
                 - code=$(curl --write-out '%{http_code}' --silent --output /dev/null "$(aws cloudformation describe-stacks --stack $stack_name --query 'Stacks[0].Outputs[?OutputKey==`BucketOutput`].OutputValue' | jq -r '.[]').s3-website-us-east-1.amazonaws.com"/);if [ "$code" == '200' ];then echo "Homepage is active ($code)";else echo "Homepage errors ("$code")";exit 1;fi 
                 - aws cloudformation describe-stack-resources --stack $stack_name | jq -r '.StackResources' | jq -r '.[] | select(.ResourceType=="AWS::S3::Bucket") | .PhysicalResourceId'
                 - for bucket in $(aws cloudformation describe-stack-resources --stack "$stack_name" | jq -r '.StackResources' | jq -r '.[] | select(.ResourceType=="AWS::S3::Bucket") | .PhysicalResourceId'); do aws s3 rb --force s3://$bucket/; done
