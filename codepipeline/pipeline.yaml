@@ -261,12 +261,12 @@ Resources:
               commands:
                 - ( set -o posix ; set )
                 - echo Install started on `date`
-                - sh ./codepipeline/scripts/run_scripts $stack_name "data*"
+                - sh ./codepipeline/scripts/run_scripts.sh $stack_name "data*"
             post_build:
               commands:
                 - echo Testing started on `date`
-                - sh ./codepipeline/scripts/run_scripts $stack_name "test*"
-                - sh ./codepipeline/scripts/run_scripts $stack_name "delete*"
+                - sh ./codepipeline/scripts/run_scripts.sh  $stack_name "test*"
+                - sh ./codepipeline/scripts/run_scripts.sh  $stack_name "delete*"
         SourceIdentifier: pleaseworkforZach
         Type: CODEPIPELINE
   CodeBuildProd:
@@ -289,11 +289,12 @@ Resources:
             install:
               commands:
                 - ( set -o posix ; set )
+                - ls -alh
                 - echo Install started on `date`
-                - sh ./codepipeline/scripts/run_scripts $stack_name "data*"
+                - sh ./codepipeline/scripts/run_scripts.sh  $stack_name "data*"
             post_build:
               commands:
                 - echo Testing started on `date`
-                - sh ./codepipeline/scripts/run_scripts $stack_name "test*"
+                - sh ./codepipeline/scripts/run_scripts.sh  $stack_name "test*"
         SourceIdentifier: pleaseworkforZach
         Type: CODEPIPELINE
