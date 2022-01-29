@@ -440,7 +440,7 @@ prepare_for_build
 #Function to delete all stacks
 if [[ "$1" == 'delete' ]]
     then
-        cfn_init_delete $STACKNAME-pipeline; cfn_init_delete $STACKNAME-pipeline-App; cfn_delete_stack $STACKNAME-pipeline-App; cfn_delete_stack $STACKNAME-pipeline; exit 1
+        cfn_init_delete $STACKNAME-pipeline; cfn_init_delete $STACKNAME-pipeline-App-Stage; cfn_delete_stack $STACKNAME-pipeline-App-Stage; cfn_init_delete $STACKNAME-pipeline-App-Prod; cfn_delete_stack $STACKNAME-pipeline-App-Prod; cfn_delete_stack $STACKNAME-pipeline; exit 1
 fi
 
 pipeline_loop

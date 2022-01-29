@@ -59,9 +59,9 @@ Resources:
         #       Configuration:
         #         EnvironmentVariables: "[{\"name\":\"Release_ID\",\"value\":\"#{codepipeline.PipelineExecutionId}\",\"type\":\"PLAINTEXT\"},{\"name\":\"Commit_ID\",\"value\":\"#{SourceVariables.CommitId}\",\"type\":\"PLAINTEXT\"}]"
         #         ProjectName: !Ref CodeBuild
-        - Name: Deploy
+        - Name: Deploy-Stage
           Actions: 
-            - Name: Deploy
+            - Name: Deploy-Stage
               ActionTypeId: 
                 Category: Deploy
                 Owner: AWS
@@ -69,15 +69,15 @@ Resources:
                 Version: 1
               Configuration: 
                 ActionMode: "CREATE_UPDATE"
-                StackName: !Sub ${AWS::StackName}-App
+                StackName: !Sub ${AWS::StackName}-App-Stage
                 RoleArn: !GetAtt IAMRole2.Arn
                 ParameterOverrides: !Sub '{"GitCommit": "#{SourceVariables.CommitId}","GitBranch": "#{SourceVariables.BranchName}","RepoID": "#{SourceVariables.FullRepositoryName}"}'
                 TemplatePath: SourceOutput::app/app.yaml
               InputArtifacts: 
                 - Name: SourceOutput
-        - Name: Data-Test
+        - Name: Data-Test-Stage
           Actions: 
-            - Name: Test
+            - Name: Test-Stage
               ActionTypeId: 
                 Category: Test
                 Owner: AWS
@@ -86,7 +86,35 @@ Resources:
               InputArtifacts: 
                 - Name: SourceOutput
               Configuration:
-                ProjectName: !Ref CodeBuild2
+                ProjectName: !Ref CodeBuildStage
+        - Name: Deploy-Prod
+          Actions: 
+            - Name: Deploy-Prod
+              ActionTypeId: 
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: 1
+              Configuration: 
+                ActionMode: "CREATE_UPDATE"
+                StackName: !Sub ${AWS::StackName}-App-Prod
+                RoleArn: !GetAtt IAMRole2.Arn
+                ParameterOverrides: !Sub '{"GitCommit": "#{SourceVariables.CommitId}","GitBranch": "#{SourceVariables.BranchName}","RepoID": "#{SourceVariables.FullRepositoryName}"}'
+                TemplatePath: SourceOutput::app/app.yaml
+              InputArtifacts: 
+                - Name: SourceOutput
+        - Name: Data-Test-Prod
+          Actions: 
+            - Name: Test-Prod
+              ActionTypeId: 
+                Category: Test
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              InputArtifacts: 
+                - Name: SourceOutput
+              Configuration:
+                ProjectName: !Ref CodeBuildProd
   CodeStarConnection:
     Type: AWS::CodeStarConnections::Connection
     Properties: 
@@ -133,15 +161,25 @@ Resources:
         - PolicyDocument: 
             Version: '2012-10-17'
             Statement:
-            - Effect: Allow
+            - Sid: AWSCloudTrailCreateLogStream20141101
+              Effect: Allow
               Action:
-              - s3:CreateBucket
-              - s3:GetBucketPolicy
-              - s3:PutBucketPolicy
-              - s3:PutBucketTagging
-              - s3:PutBucketWebsite
-              Resource: arn:aws:s3:::*
+              - '*'
+              Resource:
+              - '*'
           PolicyName: Policy
+        # - PolicyDocument: 
+        #     Version: '2012-10-17'
+        #     Statement:
+        #     - Effect: Allow
+        #       Action:
+        #       - s3:CreateBucket
+        #       - s3:GetBucketPolicy
+        #       - s3:PutBucketPolicy
+        #       - s3:PutBucketTagging
+        #       - s3:PutBucketWebsite
+        #       Resource: arn:aws:s3:::*
+        #   PolicyName: Policy
   IAMRole3:
     Type: AWS::IAM::Role
     Properties: 
@@ -202,7 +240,7 @@ Resources:
   #               - echo This always runs even if the install command fails
   #       SourceIdentifier: pleaseworkforZach
   #       Type: CODEPIPELINE
-  CodeBuild2:
+  CodeBuildStage:
     Type: AWS::CodeBuild::Project
     Properties: 
       Artifacts: 
@@ -217,7 +255,7 @@ Resources:
           version: 0.2
           env:
             variables:
-              stack_name: "${AWS::StackName}-App"
+              stack_name: "${AWS::StackName}-App-Stage"
           phases:
             install:
               commands:
@@ -228,6 +266,42 @@ Resources:
             post_build:
               commands:
                 - echo Testing started on `date`
+                - aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus'
+                - aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus'
+                - if [ "$(aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus')" == 'UPDATE_COMPLETE' ] || [ "$(aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus')" == 'CREATE_COMPLETE' ] ;then echo Stack Completed Successfully; else exit 1; fi 
+                - code=$(curl --write-out '%{http_code}' --silent --output /dev/null "$(aws cloudformation describe-stacks --stack $stack_name --query 'Stacks[0].Outputs[?OutputKey==`BucketOutput`].OutputValue' | jq -r '.[]').s3-website-us-east-1.amazonaws.com"/);if [ "$code" == '200' ];then echo "Homepage is active ($code)";else echo "Homepage errors ("$code")";exit 1;fi 
+                - aws cloudformation describe-stack-resources --stack $stack_name | jq -r '.StackResources' | jq -r '.[] | select(.ResourceType=="AWS::S3::Bucket") | .PhysicalResourceId'
+                - for bucket in $(aws cloudformation describe-stack-resources --stack "$stack_name" | jq -r '.StackResources' | jq -r '.[] | select(.ResourceType=="AWS::S3::Bucket") | .PhysicalResourceId'); do aws s3 rb --force s3://$bucket/; done
+                - aws cloudformation delete-stack --stack-name $stack_name;if [ "$?" == '0' ] ;then echo Stack Deleted Successfully; else exit 1; fi 
+        SourceIdentifier: pleaseworkforZach
+        Type: CODEPIPELINE
+  CodeBuildProd:
+    Type: AWS::CodeBuild::Project
+    Properties: 
+      Artifacts: 
+        Type: CODEPIPELINE
+      Environment: 
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+        Type: LINUX_CONTAINER
+      ServiceRole: !GetAtt IAMRole3.Arn
+      Source: 
+        BuildSpec: !Sub |
+          version: 0.2
+          env:
+            variables:
+              stack_name: "${AWS::StackName}-App-Prod"
+          phases:
+            install:
+              commands:
+                - ( set -o posix ; set )
+                - echo Install started on `date`
+                - aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus'
+                - this_bucket=$(aws cloudformation describe-stacks --stack $stack_name --query 'Stacks[0].Outputs[?OutputKey==`BucketOutput`].OutputValue' | jq -r '.[]');aws s3 sync ./code s3://$this_bucket --exclude "*.DS_Store"
+            post_build:
+              commands:
+                - echo Testing started on `date`
+                - aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus'
                 - aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus'
                 - if [ "$(aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus')" == 'UPDATE_COMPLETE' ] || [ "$(aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus')" == 'CREATE_COMPLETE' ] ;then echo Stack Completed Successfully; else exit 1; fi 
                 - code=$(curl --write-out '%{http_code}' --silent --output /dev/null "$(aws cloudformation describe-stacks --stack $stack_name --query 'Stacks[0].Outputs[?OutputKey==`BucketOutput`].OutputValue' | jq -r '.[]').s3-website-us-east-1.amazonaws.com"/);if [ "$code" == '200' ];then echo "Homepage is active ($code)";else echo "Homepage errors ("$code")";exit 1;fi 
