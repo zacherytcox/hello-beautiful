@@ -4,7 +4,7 @@ if [[ "$2" == '' ]]
     then
         script_domain "data* test*"
     else
-        script_domain "test*"
+        script_domain "$2"
 fi
 
 stack_name="$1"
