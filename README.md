@@ -4,6 +4,9 @@ This project is to build a simple application and technologies surrounding devel
 
 ## Future Enhancements (WIP)
 
+Build
+- [ ] Instructions for Windows users to use [WSL](https://docs.microsoft.com/en-us/windows/wsl/about)
+
 Template
 - [ ] Reduce IAM Role Policy permissions.
 - [ ] Clean up template object names.

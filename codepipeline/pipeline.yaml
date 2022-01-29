@@ -10,6 +10,11 @@ Resources:
   Bucket:
     Type: AWS::S3::Bucket
     Properties:
+      PublicAccessBlockConfiguration:
+          BlockPublicAcls: True
+          BlockPublicPolicy: True
+          IgnorePublicAcls: True
+          RestrictPublicBuckets: True
       Tags: 
         - Key: GitCommit
           Value: !Ref GitCommit
@@ -65,7 +70,7 @@ Resources:
               Configuration: 
                 ActionMode: "CREATE_UPDATE"
                 StackName: !Sub ${AWS::StackName}-App
-                RoleArn: !GetAtt IAMRole.Arn
+                RoleArn: !GetAtt IAMRole2.Arn
                 ParameterOverrides: !Sub '{"GitCommit": "#{SourceVariables.CommitId}","GitBranch": "#{SourceVariables.BranchName}","RepoID": "#{SourceVariables.FullRepositoryName}"}'
                 TemplatePath: SourceOutput::app/app.yaml
               InputArtifacts: 
@@ -98,8 +103,56 @@ Resources:
           Principal:
             Service: 
               - codepipeline.amazonaws.com
-              - codebuild.amazonaws.com
+          Action: sts:AssumeRole
+      Description: String
+      # Policies: 
+      #   - PolicyDocument: 
+      #       Version: '2012-10-17'
+      #       Statement:
+      #       - Sid: AWSCloudTrailCreateLogStream20141101
+      #         Effect: Allow
+      #         Action:
+      #         - '*'
+      #         Resource:
+      #         - '*'
+      #     PolicyName: Policy
+  IAMRole2:
+    Type: AWS::IAM::Role
+    Properties: 
+      AssumeRolePolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
+        - Sid: ''
+          Effect: Allow
+          Principal:
+            Service:
               - cloudformation.amazonaws.com
+          Action: sts:AssumeRole
+      Description: String
+      Policies: 
+        - PolicyDocument: 
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - s3:CreateBucket
+              - s3:GetBucketPolicy
+              - s3:PutBucketPolicy
+              - s3:PutBucketTagging
+              - s3:PutBucketWebsite
+              Resource: arn:aws:s3:::*
+          PolicyName: Policy
+  IAMRole3:
+    Type: AWS::IAM::Role
+    Properties: 
+      AssumeRolePolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
+        - Sid: ''
+          Effect: Allow
+          Principal:
+            Service: 
+              - codebuild.amazonaws.com
           Action: sts:AssumeRole
       Description: String
       Policies: 
@@ -113,6 +166,7 @@ Resources:
               Resource:
               - '*'
           PolicyName: Policy
+          
   # CodeBuild:
   #   Type: AWS::CodeBuild::Project
   #   Properties: 
@@ -148,7 +202,7 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
         Type: LINUX_CONTAINER
-      ServiceRole: !GetAtt IAMRole.Arn
+      ServiceRole: !GetAtt IAMRole3.Arn
       Source: 
         BuildSpec: !Sub |
           version: 0.2
