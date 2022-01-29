@@ -7,12 +7,10 @@ if [[ "$2" == '' ]]
         script_domain="$2"
 fi
 
-stack_name="$1"
 cd ./codepipeline/scripts/
+
+stack_name="$1"
 scripts=$(ls $script_domain)
-ls -alh
-pwd
-echo $scripts
 
 for script in $scripts
     do
