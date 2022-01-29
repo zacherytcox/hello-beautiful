@@ -8,8 +8,10 @@ if [[ "$2" == '' ]]
 fi
 
 stack_name="$1"
-
-scripts=$(ls $script_domain)
+    
+scripts=$(ls "$script_domain")
+echo pwd
+echo $scripts
 
 for script in $scripts
     do
