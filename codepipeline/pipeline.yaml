@@ -105,17 +105,17 @@ Resources:
               - codepipeline.amazonaws.com
           Action: sts:AssumeRole
       Description: String
-      # Policies: 
-      #   - PolicyDocument: 
-      #       Version: '2012-10-17'
-      #       Statement:
-      #       - Sid: AWSCloudTrailCreateLogStream20141101
-      #         Effect: Allow
-      #         Action:
-      #         - '*'
-      #         Resource:
-      #         - '*'
-      #     PolicyName: Policy
+      Policies: 
+        - PolicyDocument: 
+            Version: '2012-10-17'
+            Statement:
+            - Sid: AWSCloudTrailCreateLogStream20141101
+              Effect: Allow
+              Action:
+              - '*'
+              Resource:
+              - '*'
+          PolicyName: Policy
   IAMRole2:
     Type: AWS::IAM::Role
     Properties: 
@@ -166,6 +166,15 @@ Resources:
               Resource:
               - '*'
           PolicyName: Policy
+        # - PolicyDocument:
+        #     Version: '2012-10-17'
+        #     Statement:
+        #     - Effect: Allow
+        #       Action:
+        #       - logs:CreateLogGroup
+        #       - logs:CreateLogStream
+        #       Resource: "*"
+        #   PolicyName: Policy
           
   # CodeBuild:
   #   Type: AWS::CodeBuild::Project
