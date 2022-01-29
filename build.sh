@@ -5,7 +5,7 @@ current_path=$(pwd)
 YAMLLOCATION="file://$current_path/codepipeline/pipeline.yaml"
 YAMLLOCATIONAPP="file://$current_path/app/app.yaml"
 YAMLPARAMSLOCATION="file://$current_path/codepipeline/params.json"
-STACKNAME="Hello-Wonderful"
+STACKNAME="Hello-Beautiful"
 REGION="us-east-1"
 PROFILE="default"
 # LOCAL_STATE="./.test.state.txt"
@@ -377,11 +377,11 @@ pipeline_loop () {
         #Update parameters
         this_params=$(cat ${YAMLPARAMSLOCATION:7} | jq -r ". += [{\"ParameterKey\": \"GitCommit\",\"ParameterValue\": \"$(get_current_git_commit)\"},{\"ParameterKey\": \"GitBranch\",\"ParameterValue\": \"$(get_current_git_branch)\"}]")
 
-        cfn_create_stack $STACKNAME-pipeline $YAMLLOCATION "$this_params"
+        cfn_create_stack $STACKNAME-Pipeline $YAMLLOCATION "$this_params"
         tests_pipeline
         read -r -p "Enter 1 to delete the stack, 2 to update stack + test again, Enter to exit: " answer
         case $answer in
-            [1]* ) cfn_init_delete $STACKNAME-pipeline; cfn_init_delete $STACKNAME-pipeline-App; cfn_delete_stack $STACKNAME-pipeline-App; cfn_delete_stack $STACKNAME-pipeline; exit 1;;
+            [1]* ) cfn_init_delete $STACKNAME-Pipeline; cfn_init_delete $STACKNAME-Pipeline-App-Stage; cfn_delete_stack $STACKNAME-Pipeline-App-Stage; cfn_init_delete $STACKNAME-Pipeline-App-Prod; cfn_delete_stack $STACKNAME-Pipeline-App-Prod; cfn_delete_stack $STACKNAME-Pipeline; exit 1;;
             [2]* ) : ;;
             "" ) exit 1;;
             * ) print_style  "Please answer 1, 2, or Enter" "danger";;
@@ -440,7 +440,7 @@ prepare_for_build
 #Function to delete all stacks
 if [[ "$1" == 'delete' ]]
     then
-        cfn_init_delete $STACKNAME-pipeline; cfn_init_delete $STACKNAME-pipeline-App-Stage; cfn_delete_stack $STACKNAME-pipeline-App-Stage; cfn_init_delete $STACKNAME-pipeline-App-Prod; cfn_delete_stack $STACKNAME-pipeline-App-Prod; cfn_delete_stack $STACKNAME-pipeline; exit 1
+        cfn_init_delete $STACKNAME-Pipeline; cfn_init_delete $STACKNAME-Pipeline-App-Stage; cfn_delete_stack $STACKNAME-Pipeline-App-Stage; cfn_init_delete $STACKNAME-Pipeline-App-Prod; cfn_delete_stack $STACKNAME-Pipeline-App-Prod; cfn_delete_stack $STACKNAME-Pipeline; exit 1
 fi
 
 pipeline_loop
