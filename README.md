@@ -17,7 +17,7 @@ Pre-Commit Hooks
 - [ ] https://github.com/pre-commit/pre-commit-hooks#trailing-whitespace
 
 Pipeline
-- [ ] Pipeline Linters/Checks
+- [ ] Pipeline Linters/Checks (WIP)
 - [ ] SAST for Code
 
 
