@@ -1,6 +1,6 @@
 #!/bin/bash
 
-stack_name=$1
+stack_name="$1"
 
 bucket=$(aws cloudformation describe-stacks --stack $stack_name --query 'Stacks[0].Outputs[?OutputKey==`BucketOutput`].OutputValue' | jq -r '.[]')
 

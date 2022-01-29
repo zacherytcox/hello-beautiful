@@ -261,16 +261,12 @@ Resources:
               commands:
                 - ( set -o posix ; set )
                 - echo Install started on `date`
-                - aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus'
-                - this_bucket=$(aws cloudformation describe-stacks --stack $stack_name --query 'Stacks[0].Outputs[?OutputKey==`BucketOutput`].OutputValue' | jq -r '.[]');aws s3 sync ./code s3://$this_bucket --exclude "*.DS_Store"
+                - sh ./codepipeline/scripts/run_scripts $stack_name "data*"
             post_build:
               commands:
                 - echo Testing started on `date`
-                - sh ./codepipeline/scripts/test-cfn-successful.sh $stack_name
-                - sh ./codepipeline/scripts/test-index-active.sh $stack_name
-                - sh ./codepipeline/scripts/test*.sh $stack_name
-                - for bucket in $(aws cloudformation describe-stack-resources --stack "$stack_name" | jq -r '.StackResources' | jq -r '.[] | select(.ResourceType=="AWS::S3::Bucket") | .PhysicalResourceId'); do aws s3 rb --force s3://$bucket/; done
-                - aws cloudformation delete-stack --stack-name $stack_name;if [ "$?" == '0' ] ;then echo Stack Deleted Successfully; else exit 1; fi 
+                - sh ./codepipeline/scripts/run_scripts $stack_name "test*"
+                - sh ./codepipeline/scripts/run_scripts $stack_name "delete*"
         SourceIdentifier: pleaseworkforZach
         Type: CODEPIPELINE
   CodeBuildProd:
@@ -294,14 +290,10 @@ Resources:
               commands:
                 - ( set -o posix ; set )
                 - echo Install started on `date`
-                - aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus'
-                - this_bucket=$(aws cloudformation describe-stacks --stack $stack_name --query 'Stacks[0].Outputs[?OutputKey==`BucketOutput`].OutputValue' | jq -r '.[]');aws s3 sync ./code s3://$this_bucket --exclude "*.DS_Store"
+                - sh ./codepipeline/scripts/run_scripts $stack_name "data*"
             post_build:
               commands:
                 - echo Testing started on `date`
-                - aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus'
-                - aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus'
-                - if [ "$(aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus')" == 'UPDATE_COMPLETE' ] || [ "$(aws cloudformation describe-stacks --stack $stack_name | jq -r '.Stacks | .[].StackStatus')" == 'CREATE_COMPLETE' ] ;then echo Stack Completed Successfully; else exit 1; fi 
-                - code=$(curl --write-out '%{http_code}' --silent --output /dev/null "$(aws cloudformation describe-stacks --stack $stack_name --query 'Stacks[0].Outputs[?OutputKey==`BucketOutput`].OutputValue' | jq -r '.[]').s3-website-us-east-1.amazonaws.com"/);if [ "$code" == '200' ];then echo "Homepage is active ($code)";else echo "Homepage errors ("$code")";exit 1;fi 
+                - sh ./codepipeline/scripts/run_scripts $stack_name "test*"
         SourceIdentifier: pleaseworkforZach
         Type: CODEPIPELINE
