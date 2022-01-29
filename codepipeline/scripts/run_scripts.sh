@@ -8,8 +8,9 @@ if [[ "$2" == '' ]]
 fi
 
 stack_name="$1"
-
-scripts=$(ls "$script_domain")
+cd ./codepipeline/scripts/
+scripts=$(ls $script_domain)
+ls -alh
 pwd
 echo $scripts
 
@@ -17,3 +18,4 @@ for script in $scripts
     do
         sh $script $stack_name
 done
+cd ../..
