@@ -28,7 +28,7 @@ Resources:
       ArtifactStore: 
         Location: !Ref Bucket
         Type: S3
-      RoleArn: !GetAtt IAMRole.Arn
+      RoleArn: !GetAtt IAMRolePipeline.Arn
       RestartExecutionOnUpdate: True
       Stages: 
         - Name: Source
@@ -46,19 +46,28 @@ Resources:
               Namespace: SourceVariables
               OutputArtifacts: 
                 - Name: SourceOutput
-        # - Name: Deploy
-        #   Actions: 
-        #     - Name: Deploy
-        #       ActionTypeId: 
-        #         Category: Build
-        #         Owner: AWS
-        #         Provider: CodeBuild
-        #         Version: 1
-        #       InputArtifacts: 
-        #         - Name: SourceOutput
-        #       Configuration:
-        #         EnvironmentVariables: "[{\"name\":\"Release_ID\",\"value\":\"#{codepipeline.PipelineExecutionId}\",\"type\":\"PLAINTEXT\"},{\"name\":\"Commit_ID\",\"value\":\"#{SourceVariables.CommitId}\",\"type\":\"PLAINTEXT\"}]"
-        #         ProjectName: !Ref CodeBuild
+        - Name: Pre-Deploy-Checks
+          Actions: 
+            - Name: GitSecrets-WIP
+              ActionTypeId: 
+                Category: Test
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              InputArtifacts: 
+                - Name: SourceOutput
+              Configuration:
+                ProjectName: !Ref CodeBuildGitSecrets
+            - Name: CFN-Nag
+              ActionTypeId: 
+                Category: Test
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              InputArtifacts: 
+                - Name: SourceOutput
+              Configuration:
+                ProjectName: !Ref CodeBuildCFNNag
         - Name: Deploy-Stage
           Actions: 
             - Name: Deploy-Stage
@@ -70,7 +79,7 @@ Resources:
               Configuration: 
                 ActionMode: "CREATE_UPDATE"
                 StackName: !Sub ${AWS::StackName}-App-Stage
-                RoleArn: !GetAtt IAMRole2.Arn
+                RoleArn: !GetAtt IAMRoleCloudFormation.Arn
                 ParameterOverrides: !Sub '{"GitCommit": "#{SourceVariables.CommitId}","GitBranch": "#{SourceVariables.BranchName}","RepoID": "#{SourceVariables.FullRepositoryName}"}'
                 TemplatePath: SourceOutput::app/app.yaml
               InputArtifacts: 
@@ -98,7 +107,7 @@ Resources:
               Configuration: 
                 ActionMode: "CREATE_UPDATE"
                 StackName: !Sub ${AWS::StackName}-App-Prod
-                RoleArn: !GetAtt IAMRole2.Arn
+                RoleArn: !GetAtt IAMRoleCloudFormation.Arn
                 ParameterOverrides: !Sub '{"GitCommit": "#{SourceVariables.CommitId}","GitBranch": "#{SourceVariables.BranchName}","RepoID": "#{SourceVariables.FullRepositoryName}"}'
                 TemplatePath: SourceOutput::app/app.yaml
               InputArtifacts: 
@@ -115,12 +124,32 @@ Resources:
                 - Name: SourceOutput
               Configuration:
                 ProjectName: !Ref CodeBuildProd
+        # - Name: Approval-Delete
+        #   Actions: 
+        #     - Name: Approval-Delete
+        #       ActionTypeId: 
+        #         Category: Approval
+        #         Owner: AWS
+        #         Provider: Manual
+        #         Version: 1
+        # - Name: Delete-Prod
+        #   Actions: 
+        #     - Name: Delete-Prod
+        #       ActionTypeId: 
+        #         Category: Test
+        #         Owner: AWS
+        #         Provider: CodeBuild
+        #         Version: 1
+        #       InputArtifacts: 
+        #         - Name: SourceOutput
+        #       Configuration:
+        #         ProjectName: !Ref CodeBuildDeleteProd
   CodeStarConnection:
     Type: AWS::CodeStarConnections::Connection
     Properties: 
       ConnectionName: hello-beautiful
       ProviderType: GitHub
-  IAMRole:
+  IAMRolePipeline:
     Type: AWS::IAM::Role
     Properties: 
       AssumeRolePolicyDocument: 
@@ -144,7 +173,7 @@ Resources:
               Resource:
               - '*'
           PolicyName: Policy
-  IAMRole2:
+  IAMRoleCloudFormation:
     Type: AWS::IAM::Role
     Properties: 
       AssumeRolePolicyDocument: 
@@ -180,7 +209,7 @@ Resources:
         #       - s3:PutBucketWebsite
         #       Resource: arn:aws:s3:::*
         #   PolicyName: Policy
-  IAMRole3:
+  IAMRoleCodeBuild:
     Type: AWS::IAM::Role
     Properties: 
       AssumeRolePolicyDocument: 
@@ -240,6 +269,47 @@ Resources:
   #               - echo This always runs even if the install command fails
   #       SourceIdentifier: pleaseworkforZach
   #       Type: CODEPIPELINE
+  CodeBuildGitSecrets:
+    Type: AWS::CodeBuild::Project
+    Properties: 
+      Artifacts: 
+        Type: CODEPIPELINE
+      Environment: 
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+        Type: LINUX_CONTAINER
+      ServiceRole: !GetAtt IAMRoleCodeBuild.Arn
+      Source: 
+        BuildSpec: !Sub |
+          version: 0.2
+          env:
+            variables:
+              stack_name: "${AWS::StackName}-App-Stage"
+          phases:
+            install:
+              commands:
+                - ( set -o posix ; set )
+                - echo Install started on `date`
+                - git clone https://github.com/awslabs/git-secrets.git
+                - ls -alh
+                - ls -alh git-secrets
+                - cd git-secrets
+                - pwd
+                - make install
+                - git secrets --install
+                - cd ..
+                - git clone https://github.com/${RepoID}.git
+                - cd hello-beautiful
+                - git secrets --install
+                - git secrets
+            build:
+              commands:
+                - echo Testing started on `date`
+                - git secrets --scan ./tmp.txt
+                - git secrets --scan-history
+                - git secrets --scan -r 
+        SourceIdentifier: pleaseworkforZach
+        Type: CODEPIPELINE
   CodeBuildStage:
     Type: AWS::CodeBuild::Project
     Properties: 
@@ -249,7 +319,7 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
         Type: LINUX_CONTAINER
-      ServiceRole: !GetAtt IAMRole3.Arn
+      ServiceRole: !GetAtt IAMRoleCodeBuild.Arn
       Source: 
         BuildSpec: !Sub |
           version: 0.2
@@ -278,7 +348,7 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
         Type: LINUX_CONTAINER
-      ServiceRole: !GetAtt IAMRole3.Arn
+      ServiceRole: !GetAtt IAMRoleCodeBuild.Arn
       Source: 
         BuildSpec: !Sub |
           version: 0.2
@@ -298,3 +368,62 @@ Resources:
                 - sh ./codepipeline/scripts/run_scripts.sh  $stack_name "test*"
         SourceIdentifier: pleaseworkforZach
         Type: CODEPIPELINE
+  # CodeBuildDeleteProd:
+  #   Type: AWS::CodeBuild::Project
+  #   Properties: 
+  #     Artifacts: 
+  #       Type: CODEPIPELINE
+  #     Environment: 
+  #       ComputeType: BUILD_GENERAL1_SMALL
+  #       Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+  #       Type: LINUX_CONTAINER
+  #     ServiceRole: !GetAtt IAMRoleCodeBuild.Arn
+  #     Source: 
+  #       BuildSpec: !Sub |
+  #         version: 0.2
+  #         env:
+  #           variables:
+  #             stack_name: "${AWS::StackName}-App-Prod"
+  #         phases:
+  #           post_build:
+  #             commands:
+  #               - echo Testing started on `date`
+  #               - sh ./codepipeline/scripts/run_scripts.sh  $stack_name "delete*"
+  #       SourceIdentifier: pleaseworkforZach
+  #       Type: CODEPIPELINE
+  CodeBuildCFNNag:
+    Type: AWS::CodeBuild::Project
+    Properties: 
+      Artifacts: 
+        Type: CODEPIPELINE
+      Environment: 
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+        Type: LINUX_CONTAINER
+      ServiceRole: !GetAtt IAMRoleCodeBuild.Arn
+      Source: 
+        BuildSpec: !Sub |
+          version: 0.2
+          env:
+            variables:
+              stack_name: "${AWS::StackName}-App-Stage"
+          phases:
+            install:
+              commands:
+                - ( set -o posix ; set )
+                - echo Install started on `date`
+                - gem install cfn-nag
+            post_build:
+              commands:
+                - echo Testing started on `date`
+                - cfn_nag_scan --input-path .
+        SourceIdentifier: pleaseworkforZach
+        Type: CODEPIPELINE
+
+
+
+
+
+
+
+        
