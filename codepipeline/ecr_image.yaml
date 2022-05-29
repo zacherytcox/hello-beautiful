@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  RepoID:
+    Type: String
+  GitCommit:
+    Type: String
+  GitBranch:
+    Type: String
+Resources:
+  ECR:
+    Type: AWS::ECR::Repository
+    Properties: 
+      RepositoryName: codebuild-kics-image
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      LifecyclePolicy: 
+        LifecyclePolicyText: !Sub | 
+          {
+            "rules": [
+              {
+                "rulePriority": 2,
+                "description": "Expire images older than 5 days",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "sinceImagePushed",
+                  "countUnit": "days",
+                  "countNumber": 30
+                },
+                "action": {
+                  "type": "expire"
+                }
+              },
+              {
+                "rulePriority": 1,
+                "description": "Expire untagged images",
+                "selection": {
+                  "tagStatus": "untagged",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 1
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+      Tags: 
+        - Key: GitCommit
+          Value: !Ref GitCommit
+        - Key: GitBranch
+          Value: !Ref GitBranch
+        - Key: RepoID
+          Value: !Ref RepoID
+Outputs:
+  ECR1:
+    Description: ECR Name
+    Value: !Ref ECR
+    Export:
+      Name: !Sub "${AWS::StackName}-Name"
+  ECR2:
+    Description: "ECR Arn"
+    Value: !GetAtt ECR.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-Arn"
+  ECR3:
+    Description: "ECR Uri"
+    Value: !GetAtt ECR.RepositoryUri
+    Export:
+      Name: !Sub "${AWS::StackName}-Uri"

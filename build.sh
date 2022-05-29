@@ -3,6 +3,7 @@
 #Set parameters
 current_path=$(pwd)
 YAMLLOCATION="file://$current_path/codepipeline/pipeline.yaml"
+YAMLLOCATIONECR="file://$current_path/codepipeline/ecr_image.yaml"
 YAMLLOCATIONAPP="file://$current_path/app/app.yaml"
 YAMLPARAMSLOCATION="file://$current_path/codepipeline/params.json"
 STACKNAME="Hello-Beautiful"
@@ -117,8 +118,17 @@ check_that_packages_are_installed () {
     if [[ "$brew_version" != '0' ]]
         then
             print_style "brew is not installed!" "background"
+            exit 1
         else
             print_style "brew installed" "success"
+    fi
+
+    terraform -version;terraform_version=$?
+    if [[ "$terraform_version" != '0' ]]
+        then
+            brew install terraform
+        else
+            print_style "terraform installed" "success"
     fi
 
     node --version;node_version=$?
@@ -377,6 +387,7 @@ pipeline_loop () {
         #Update parameters
         this_params=$(cat ${YAMLPARAMSLOCATION:7} | jq -r ". += [{\"ParameterKey\": \"GitCommit\",\"ParameterValue\": \"$(get_current_git_commit)\"},{\"ParameterKey\": \"GitBranch\",\"ParameterValue\": \"$(get_current_git_branch)\"}]")
 
+        # cfn_create_stack $STACKNAME-ECR $YAMLLOCATIONECR "$this_params"
         cfn_create_stack $STACKNAME-Pipeline $YAMLLOCATION "$this_params"
         tests_pipeline
         read -r -p "Enter 1 to delete the stack, 2 to update stack + test again, Enter to exit: " answer

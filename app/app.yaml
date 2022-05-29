@@ -24,6 +24,11 @@ Resources:
         - Key: RepoID
           Value: !Ref RepoID
   BucketPolicy:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F16
+            reason: "This is a public facing S3 bucket."
     Type: AWS::S3::BucketPolicy
     Properties: 
       Bucket: !Ref Bucket

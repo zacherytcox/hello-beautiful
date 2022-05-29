@@ -48,26 +48,36 @@ Resources:
                 - Name: SourceOutput
         - Name: Pre-Deploy-Checks
           Actions: 
-            - Name: GitSecrets-WIP
-              ActionTypeId: 
-                Category: Test
-                Owner: AWS
-                Provider: CodeBuild
-                Version: 1
-              InputArtifacts: 
-                - Name: SourceOutput
-              Configuration:
-                ProjectName: !Ref CodeBuildGitSecrets
-            - Name: CFN-Nag
-              ActionTypeId: 
-                Category: Test
-                Owner: AWS
-                Provider: CodeBuild
-                Version: 1
-              InputArtifacts: 
-                - Name: SourceOutput
-              Configuration:
-                ProjectName: !Ref CodeBuildCFNNag
+          #   - Name: GitSecrets-WIP
+          #     ActionTypeId: 
+          #       Category: Test
+          #       Owner: AWS
+          #       Provider: CodeBuild
+          #       Version: 1
+          #     InputArtifacts: 
+          #       - Name: SourceOutput
+          #     Configuration:
+          #       ProjectName: !Ref CodeBuildGitSecrets
+          #   - Name: CFN-Nag
+          #     ActionTypeId: 
+          #       Category: Test
+          #       Owner: AWS
+          #       Provider: CodeBuild
+          #       Version: 1
+          #     InputArtifacts: 
+          #       - Name: SourceOutput
+          #     Configuration:
+          #       ProjectName: !Ref CodeBuildCFNNag
+            # - Name: KICS
+            #   ActionTypeId: 
+            #     Category: Test
+            #     Owner: AWS
+            #     Provider: CodeBuild
+            #     Version: 1
+            #   InputArtifacts: 
+            #     - Name: SourceOutput
+            #   Configuration:
+            #     ProjectName: !Ref CodeBuildKICS
         - Name: Deploy-Stage
           Actions: 
             - Name: Deploy-Stage
@@ -124,26 +134,6 @@ Resources:
                 - Name: SourceOutput
               Configuration:
                 ProjectName: !Ref CodeBuildProd
-        # - Name: Approval-Delete
-        #   Actions: 
-        #     - Name: Approval-Delete
-        #       ActionTypeId: 
-        #         Category: Approval
-        #         Owner: AWS
-        #         Provider: Manual
-        #         Version: 1
-        # - Name: Delete-Prod
-        #   Actions: 
-        #     - Name: Delete-Prod
-        #       ActionTypeId: 
-        #         Category: Test
-        #         Owner: AWS
-        #         Provider: CodeBuild
-        #         Version: 1
-        #       InputArtifacts: 
-        #         - Name: SourceOutput
-        #       Configuration:
-        #         ProjectName: !Ref CodeBuildDeleteProd
   CodeStarConnection:
     Type: AWS::CodeStarConnections::Connection
     Properties: 
@@ -190,25 +180,15 @@ Resources:
         - PolicyDocument: 
             Version: '2012-10-17'
             Statement:
-            - Sid: AWSCloudTrailCreateLogStream20141101
-              Effect: Allow
+            - Effect: Allow
               Action:
-              - '*'
-              Resource:
-              - '*'
+              - s3:CreateBucket
+              - s3:GetBucketPolicy
+              - s3:PutBucketPolicy
+              - s3:PutBucketTagging
+              - s3:PutBucketWebsite
+              Resource: arn:aws:s3:::*
           PolicyName: Policy
-        # - PolicyDocument: 
-        #     Version: '2012-10-17'
-        #     Statement:
-        #     - Effect: Allow
-        #       Action:
-        #       - s3:CreateBucket
-        #       - s3:GetBucketPolicy
-        #       - s3:PutBucketPolicy
-        #       - s3:PutBucketTagging
-        #       - s3:PutBucketWebsite
-        #       Resource: arn:aws:s3:::*
-        #   PolicyName: Policy
   IAMRoleCodeBuild:
     Type: AWS::IAM::Role
     Properties: 
@@ -226,49 +206,19 @@ Resources:
         - PolicyDocument: 
             Version: '2012-10-17'
             Statement:
-            - Sid: AWSCloudTrailCreateLogStream20141101
-              Effect: Allow
+            - Effect: Allow
               Action:
-              - '*'
-              Resource:
-              - '*'
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              Resource: arn:aws:logs:*:*:log-group:*
+            - Effect: Allow
+              Action: s3:DeleteBucket
+              Resource: arn:aws:s3:::*
+            - Effect: Allow
+              Action: s3:GetObject
+              Resource: arn:aws:s3:::hello-beautiful-pipeline-bucket*/*
           PolicyName: Policy
-        # - PolicyDocument:
-        #     Version: '2012-10-17'
-        #     Statement:
-        #     - Effect: Allow
-        #       Action:
-        #       - logs:CreateLogGroup
-        #       - logs:CreateLogStream
-        #       Resource: "*"
-        #   PolicyName: Policy
-          
-  # CodeBuild:
-  #   Type: AWS::CodeBuild::Project
-  #   Properties: 
-  #     Artifacts: 
-  #       Type: CODEPIPELINE
-  #     Environment: 
-  #       ComputeType: BUILD_GENERAL1_SMALL
-  #       Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
-  #       Type: LINUX_CONTAINER
-  #     ServiceRole: !GetAtt IAMRole.Arn
-  #     Source: 
-  #       BuildSpec: !Sub |
-  #         version: 0.2
-  #         phases:
-  #           build:
-  #             commands:
-  #               - echo Build started on `date`
-  #               - echo $Commit_ID
-  #               - ( set -o posix ; set ) | less
-  #               - ls -alh
-  #               - pwd
-  #               - whoami
-  #             finally:
-  #               - echo This always runs even if the install command fails
-  #       SourceIdentifier: pleaseworkforZach
-  #       Type: CODEPIPELINE
   CodeBuildGitSecrets:
     Type: AWS::CodeBuild::Project
     Properties: 
@@ -368,29 +318,6 @@ Resources:
                 - sh ./codepipeline/scripts/run_scripts.sh  $stack_name "test*"
         SourceIdentifier: pleaseworkforZach
         Type: CODEPIPELINE
-  # CodeBuildDeleteProd:
-  #   Type: AWS::CodeBuild::Project
-  #   Properties: 
-  #     Artifacts: 
-  #       Type: CODEPIPELINE
-  #     Environment: 
-  #       ComputeType: BUILD_GENERAL1_SMALL
-  #       Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
-  #       Type: LINUX_CONTAINER
-  #     ServiceRole: !GetAtt IAMRoleCodeBuild.Arn
-  #     Source: 
-  #       BuildSpec: !Sub |
-  #         version: 0.2
-  #         env:
-  #           variables:
-  #             stack_name: "${AWS::StackName}-App-Prod"
-  #         phases:
-  #           post_build:
-  #             commands:
-  #               - echo Testing started on `date`
-  #               - sh ./codepipeline/scripts/run_scripts.sh  $stack_name "delete*"
-  #       SourceIdentifier: pleaseworkforZach
-  #       Type: CODEPIPELINE
   CodeBuildCFNNag:
     Type: AWS::CodeBuild::Project
     Properties: 
@@ -410,13 +337,51 @@ Resources:
           phases:
             install:
               commands:
-                - ( set -o posix ; set )
                 - echo Install started on `date`
                 - gem install cfn-nag
             post_build:
               commands:
                 - echo Testing started on `date`
                 - cfn_nag_scan --input-path .
+        SourceIdentifier: pleaseworkforZach
+        Type: CODEPIPELINE
+  CodeBuildKICS:
+    Type: AWS::CodeBuild::Project
+    Properties: 
+      Artifacts: 
+        Type: CODEPIPELINE
+      Environment: 
+        ComputeType: BUILD_GENERAL1_MEDIUM
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+        Type: LINUX_CONTAINER
+      ServiceRole: !GetAtt IAMRoleCodeBuild.Arn
+      Source: 
+        BuildSpec: !Sub |
+          version: 0.2
+          env:
+            variables:
+              stack_name: "${AWS::StackName}-App-Stage"
+              kics_repo: "https://github.com/Checkmarx/kics.git"
+              go_install: "./go_install.tar.gz"
+          phases:
+            install:
+              commands:
+                - ( set -o posix ; set )
+                - tmp=$(pwd) && cd $HOME/.goenv && git pull --ff-only && cd - && cd $tmp
+                - goenv install 1.17.7
+                - goenv local 1.17.7
+                - go version
+                - echo Install started on `date`
+                - git clone $kics_repo
+                - cd kics
+                - make build
+                - cd ..
+            post_build:
+              commands:
+                - echo Testing started on `date`
+                - pwd
+                - ls -alh
+                - ./kics/bin/kics scan -q 'kics/assets/queries' -p '.' --report-formats html -o ./results
         SourceIdentifier: pleaseworkforZach
         Type: CODEPIPELINE
 
