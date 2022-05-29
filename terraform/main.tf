@@ -261,7 +261,7 @@ resource "aws_iam_role" "iam_role_codebuild" {
         {
           Action   = ["s3:GetObject","s3:DeleteObject","s3:PutObject"]
           Effect   = "Allow"
-          Resource = ["${aws_s3_bucket.bucket.arn}*/*"]
+          Resource = ["${aws_s3_bucket.bucket.arn}*/*"]#,"arn:aws:s3:::${var.stack_name}*/*"]
         },
         {
           Action   = ["cloudformation:DescribeStacks"]
