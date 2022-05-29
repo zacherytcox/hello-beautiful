@@ -1,0 +1,15 @@
+version: 0.2
+env:
+  variables:
+    stack_name: "Hello-Beautiful-App-Stage"
+phases:
+  install:
+    commands:
+      - ( set -o posix ; set )
+      - echo Install started on `date`
+      - sh ./codepipeline/scripts/run_scripts.sh $stack_name "data*"
+  post_build:
+    commands:
+      - echo Testing started on `date`
+      - sh ./codepipeline/scripts/run_scripts.sh  $stack_name "test*"
+      - sh ./codepipeline/scripts/run_scripts.sh  $stack_name "delete*"
