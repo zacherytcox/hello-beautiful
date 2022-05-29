@@ -17,7 +17,6 @@ for script in $scripts
     do
         sh $script $stack_name
         result=$?
-        echo "results: >"$result
         if [[ "$result" != '0' ]]
             then
                 echo "Issue(s) within script: $script"
