@@ -259,7 +259,7 @@ resource "aws_iam_role" "iam_role_codebuild" {
           Resource = "arn:aws:s3:::${lower(var.stack_name)}*"
         },
         {
-          Action   = ["s3:GetObject","s3:DeleteObject"]
+          Action   = ["s3:GetObject","s3:DeleteObject","s3:PutObject"]
           Effect   = "Allow"
           Resource = ["${aws_s3_bucket.bucket.arn}*/*"]
         },
