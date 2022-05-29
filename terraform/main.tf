@@ -123,7 +123,7 @@ resource "aws_codepipeline" "codepipeline" {
         OutputFileName = "CreateStackOutput.json"
         StackName      = "${var.stack_name}-App-Stage"
         TemplatePath   = "SourceOutput::app/app.yaml"
-        RoleArn = aws_iam_role.iam_role_cloudformation.arn
+        RoleArn        = aws_iam_role.iam_role_cloudformation.arn
 
         # May be problematic...
         ParameterOverrides : "{\"GitCommit\": \"${var.git_commit}\",\"GitBranch\": \"${var.git_branch}\",\"RepoID\": \"${var.repo_id}\"}"
@@ -254,14 +254,14 @@ resource "aws_iam_role" "iam_role_codebuild" {
           Resource = "arn:aws:logs:*:*:log-group:*"
         },
         {
-          Action   = ["s3:DeleteBucket","s3:DeleteBucketPolicy","s3:ListBucket"]
+          Action   = ["s3:DeleteBucket", "s3:DeleteBucketPolicy", "s3:ListBucket"]
           Effect   = "Allow"
-          Resource = "arn:aws:s3:::${lower(var.stack_name)}*"
+          Resource = ["arn:aws:s3:::${lower(var.stack_name)}*", "arn:aws:s3:::${var.stack_name}*"]
         },
         {
-          Action   = ["s3:GetObject","s3:DeleteObject","s3:PutObject"]
+          Action   = ["s3:GetObject", "s3:DeleteObject", "s3:PutObject"]
           Effect   = "Allow"
-          Resource = ["${aws_s3_bucket.bucket.arn}*/*","arn:aws:s3:::${var.stack_name}*/*"]
+          Resource = ["${aws_s3_bucket.bucket.arn}*/*", "arn:aws:s3:::${var.stack_name}*/*"]
         },
         {
           Action   = ["cloudformation:DescribeStacks"]
@@ -269,11 +269,11 @@ resource "aws_iam_role" "iam_role_codebuild" {
           Resource = "*"
         },
         {
-          Action   = ["cloudformation:DeleteStack","cloudformation:DescribeStackResources"]
+          Action   = ["cloudformation:DeleteStack", "cloudformation:DescribeStackResources"]
           Effect   = "Allow"
           Resource = "arn:aws:cloudformation:us-east-1:${data.aws_caller_identity.current.account_id}:stack/${var.stack_name}-*"
         }
-        
+
       ]
     })
   }
@@ -332,8 +332,8 @@ resource "aws_codebuild_project" "codebuild_stage" {
   }
 
   source {
-    type              = "CODEPIPELINE"
+    type = "CODEPIPELINE"
     # source_identifier = pleaseworkforZach
-    buildspec         = file("${path.module}/buildspecs/buildspecstage.yaml")
+    buildspec = file("${path.module}/buildspecs/buildspecstage.yaml")
   }
 }

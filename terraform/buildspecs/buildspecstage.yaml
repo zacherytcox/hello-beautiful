@@ -12,4 +12,4 @@ phases:
     commands:
       - echo Testing started on `date`
       - sh ./codepipeline/scripts/run_scripts.sh  $stack_name "test*"
-      # - sh ./codepipeline/scripts/run_scripts.sh  $stack_name "delete*"
+      - sh ./codepipeline/scripts/run_scripts.sh  $stack_name "delete*"
