@@ -16,8 +16,9 @@ scripts=$(ls $script_domain)
 for script in $scripts
     do
         sh $script $stack_name
-        echo $?
-        if [[ "$?" != '0' ]]
+        result=$?
+        echo "results: >"$result
+        if [[ "$result" != '0' ]]
             then
                 echo "Issue(s) within script: $script"
                 exit 1
